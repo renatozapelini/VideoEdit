@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
@@ -22,6 +23,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +43,10 @@ public class TattooTrackActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private volatile boolean playing = false;
     private Button drawToggleBtn;
+    private Button generateBtn;
+    private Button previewBtn;
+    private Button saveBtn;
+    private Bitmap lastPreviewBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,12 +143,20 @@ public class TattooTrackActivity extends Activity {
         row.addView(il, ilp); row.addView(intensitySeek, isp);
         step3.addView(row);
 
-        Button trackBtn = primaryButton("Gerar prévia contínua");
+        Button previewBtn = secondaryButton("Ver preview");
+        previewBtn.setOnClickListener(v -> runSingleFramePreview());
+        step3.addView(previewBtn);
+
+        generateBtn = primaryButton("Gerar");
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         tlp.topMargin = dp(8);
-        trackBtn.setLayoutParams(tlp);
-        trackBtn.setOnClickListener(v -> runTrackingPreview());
-        step3.addView(trackBtn);
+        generateBtn.setLayoutParams(tlp);
+        generateBtn.setOnClickListener(v -> runTrackingPreview());
+        step3.addView(generateBtn);
+
+        saveBtn = accentButton("Salvar");
+        saveBtn.setOnClickListener(v -> savePreviewBitmap());
+        step3.addView(saveBtn);
 
         previewStatus = label("Prévia aparecerá aqui.");
         previewStatus.setPadding(0, dp(8), 0, dp(4));
@@ -251,12 +266,72 @@ public class TattooTrackActivity extends Activity {
         }).start();
     }
 
+    private RectF capRect(RectF r, Bitmap bmp, float maxFraction) {
+        if (r.width() <= 0 || r.height() <= 0) return r;
+        float maxW = Math.max(1f, bmp.getWidth() * maxFraction);
+        float maxH = Math.max(1f, bmp.getHeight() * maxFraction);
+        float w = r.width();
+        float h = r.height();
+        if (w > maxW || h > maxH) {
+            float scale = Math.min(maxW / w, maxH / h);
+            float newW = w * scale;
+            float newH = h * scale;
+            return new RectF(r.left, r.top, r.left + newW, r.top + newH);
+        }
+        return r;
+    }
+
+    private void runSingleFramePreview() {
+        if (videoUri == null) { Toast.makeText(this, "Selecione um vídeo.", Toast.LENGTH_SHORT).show(); return; }
+        RectF bounds = drawView.getDrawnBoundsInBitmap();
+        if (bounds == null) { Toast.makeText(this, "Desenhe sobre a tatuagem primeiro.", Toast.LENGTH_LONG).show(); return; }
+        previewBtn.setText("Gerando...");
+        previewStatus.setText("Gerando prévia...");
+        new Thread(() -> {
+            try {
+                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                mmr.setDataSource(this, videoUri);
+                String dur = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                long dms = dur != null ? Long.parseLong(dur) : 0;
+                long timeUs = dms > 0 ? (dms * 1000L * frameSeek.getProgress() / 100L) : 0;
+                Bitmap f = mmr.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST);
+                mmr.release();
+                if (f == null) throw new Exception("Sem quadro");
+                RectF rect = new RectF(bounds);
+                if (baseFrame != null && (f.getWidth() != baseFrame.getWidth() || f.getHeight() != baseFrame.getHeight())) {
+                    float sx = (float) f.getWidth() / baseFrame.getWidth();
+                    float sy = (float) f.getHeight() / baseFrame.getHeight();
+                    rect = new RectF(rect.left * sx, rect.top * sy, rect.right * sx, rect.bottom * sy);
+                }
+                int radius = Math.max(6, intensitySeek.getProgress());
+                rect = capRect(rect, f, 0.9f);
+                Bitmap out = SimpleTracker.applyBlur(f, rect, radius);
+                lastPreviewBitmap = out;
+                handler.post(() -> {
+                    previewFrames.clear();
+                    previewFrames.add(out);
+                    previewView.setImageBitmap(out);
+                    previewSeekRef.setMax(0);
+                    previewSeekRef.setProgress(0);
+                    previewBtn.setText("Ver preview");
+                    previewStatus.setText("✓ Prévia pronta (1 frame). Ajuste a intensidade e clique em Gerar.");
+                });
+            } catch (Exception e) {
+                handler.post(() -> {
+                    previewBtn.setText("Ver preview");
+                    previewStatus.setText("Erro na prévia: " + e.getMessage());
+                });
+            }
+        }).start();
+    }
+
     private void runTrackingPreview() {
         if (videoUri == null) { Toast.makeText(this, "Selecione um vídeo.", Toast.LENGTH_SHORT).show(); return; }
         RectF bounds = drawView.getDrawnBoundsInBitmap();
         if (bounds == null) { Toast.makeText(this, "Desenhe sobre a tatuagem primeiro.", Toast.LENGTH_LONG).show(); return; }
         playing = false;
         previewStatus.setText("Gerando prévia contínua...");
+        generateBtn.setText("Gerando...");
         previewFrames.clear();
         frames.clear();
         previewTimesUs.clear();
@@ -291,6 +366,7 @@ public class TattooTrackActivity extends Activity {
                     rect = new RectF(rect.left*sx, rect.top*sy, rect.right*sx, rect.bottom*sy);
                 }
                 int radius = Math.max(6, intensitySeek.getProgress());
+                rect = capRect(rect, first, 0.9f);
                 Bitmap prev = first;
                 RectF cur = rect;
                 for (int i = 0; i < frames.size(); i++) {
@@ -302,6 +378,8 @@ public class TattooTrackActivity extends Activity {
                 }
                 handler.post(() -> {
                     if (!previewFrames.isEmpty()) {
+                        generateBtn.setText("Gerar");
+                        lastPreviewBitmap = previewFrames.get(0);
                         previewView.setImageBitmap(previewFrames.get(0));
                         if (previewSeekRef != null) { previewSeekRef.setMax(previewFrames.size()-1); previewSeekRef.setProgress(0); }
                         previewStatus.setText("✓ Prévia contínua pronta (" + previewFrames.size() + " quadros). Reproduza para conferir o rastreio.");
@@ -333,6 +411,22 @@ public class TattooTrackActivity extends Activity {
             }
             playing = false;
         }).start();
+    }
+
+    private void savePreviewBitmap() {
+        if (lastPreviewBitmap == null) { Toast.makeText(this, "Gere uma prévia antes de salvar.", Toast.LENGTH_SHORT).show(); return; }
+        try {
+            File dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            if (dir == null) dir = new File(getExternalFilesDir(null), "Pictures");
+            if (!dir.exists()) dir.mkdirs();
+            File f = new File(dir, "videodedit_preview_" + System.currentTimeMillis() + ".png");
+            FileOutputStream fos = new FileOutputStream(f);
+            lastPreviewBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            fos.close();
+            Toast.makeText(this, "Salvo em: " + f.getAbsolutePath(), Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Erro ao salvar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private LinearLayout card(String title, String desc) {
