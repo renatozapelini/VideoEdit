@@ -24,13 +24,13 @@ public class AiActivity extends Activity {
         box.setPadding(24, 24, 24, 24);
 
         TextView title = new TextView(this);
-        title.setText("Ferramentas com IA");
+        title.setText("IA local (no app)");
         title.setTextSize(20);
         title.setPadding(0, 0, 0, 12);
         box.addView(title);
 
         TextView info = new TextView(this);
-        info.setText("Use IAs para: mostrar a tatuagem e ela ser rastreada e removida da pessoa; e aplicar borrão leve no rosto mantendo a boca visível.\n\nSelecione um vídeo e escolha uma ferramenta de IA abaixo.");
+        info.setText("Processamento por IA rodando localmente no aparelho, sem abrir sites. Selecione o vídeo e escolha a função.");
         info.setTextSize(14);
         info.setPadding(0, 0, 0, 16);
         box.addView(info);
@@ -45,29 +45,18 @@ public class AiActivity extends Activity {
         });
         box.addView(pick);
 
-        addTool(box, "Remover objeto/tatuagem com IA (online)",
-                "Ferramentas que permitem marcar objeto e remover com IA/inpainting (algumas com rastreio em vídeo ou por trechos).",
-                "https://www.google.com/search?q=AI+video+object+removal+remove+tattoo+track+free+online");
+        Button face = new Button(this);
+        face.setText("IA: borrar rosto (leve) preservando boca");
+        face.setOnClickListener(v -> open("face_ai"));
+        box.addView(face);
 
-        addTool(box, "Borrão de rosto com boca visível (IA)",
-                "Ferramentas de anonimização facial que preservam expressão/boca quando possível.",
-                "https://www.google.com/search?q=AI+face+blur+keep+mouth+visible+anonymize+video+free");
-
-        addTool(box, "CapCut (máscara/rastreio e blur)",
-                "Use máscara com rastreamento para seguir rosto/tatuagem; aplique blur ou adesivo/cobertura.",
-                "com.lemon.lvoverseas",
-                "https://play.google.com/store/apps/details?id=com.lemon.lvoverseas");
-
-        addTool(box, "Runway / ferramentas de inpainting (web)",
-                "Serviços de IA para remover objetos em vídeo (podem ter limites grátis).",
-                "https://runwayml.com/");
-
-        addTool(box, "Fotor / removedores online",
-                "Removedores de objeto por IA (úteis para quadros/trechos; ver opções de vídeo).",
-                "https://www.fotor.com/features/object-remover/");
+        Button tattoo = new Button(this);
+        tattoo.setText("IA: rastrear e remover tatuagem");
+        tattoo.setOnClickListener(v -> open("tattoo_ai"));
+        box.addView(tattoo);
 
         TextView tip = new TextView(this);
-        tip.setText("\nComo usar: 1) Selecione o vídeo. 2) Abra a ferramenta de IA. 3) Marque/mostre a tatuagem para a IA rastrear e remover; para rosto, escolha borrão leve e ajuste para manter a boca visível. 4) Exporte o resultado.");
+        tip.setText("\nComo usar: selecione o vídeo, marque a área (rosto/tatuagem) quando solicitado e inicie o processamento local. Os modelos de IA são carregados do próprio app.");
         tip.setTextSize(12);
         box.addView(tip);
 
@@ -75,39 +64,16 @@ public class AiActivity extends Activity {
         setContentView(scroll);
     }
 
-    private void addTool(LinearLayout box, String name, String desc, String url) {
-        addTool(box, name, desc, null, url);
-    }
-
-    private void addTool(LinearLayout box, String name, String desc, String pkg, String url) {
-        TextView t = new TextView(this);
-        t.setText("\n" + name);
-        t.setTextSize(16);
-        box.addView(t);
-        TextView d = new TextView(this);
-        d.setText(desc);
-        d.setTextSize(13);
-        box.addView(d);
-        Button b = new Button(this);
-        b.setText("Abrir");
-        b.setOnClickListener(v -> open(pkg, url));
-        box.addView(b);
-    }
-
-    private void open(String pkg, String url) {
-        if (pkg != null) {
-            Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
-            if (i != null) {
-                startActivity(i);
-                return;
-            }
+    private void open(String mode) {
+        if (selectedVideo == null) {
+            Toast.makeText(this, "Selecione um vídeo primeiro.", Toast.LENGTH_SHORT).show();
+            return;
         }
-        try {
-            Intent web = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            startActivity(web);
-        } catch (Exception e) {
-            Toast.makeText(this, "Não foi possível abrir.", Toast.LENGTH_SHORT).show();
-        }
+        Intent i = new Intent(this, AiEditorActivity.class);
+        i.putExtra("mode", mode);
+        i.setData(selectedVideo);
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(i);
     }
 
     @Override
@@ -118,7 +84,7 @@ public class AiActivity extends Activity {
             if (selectedVideo != null) {
                 try { getContentResolver().takePersistableUriPermission(selectedVideo, Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) {}
             }
-            Toast.makeText(this, "Vídeo selecionado. Abra uma ferramenta de IA.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Vídeo selecionado.", Toast.LENGTH_SHORT).show();
         }
     }
 }

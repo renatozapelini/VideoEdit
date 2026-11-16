@@ -3,3 +3,8 @@ build/
 *.jks
 *.keystore
 local.properties
+
+# local build artifacts and extracted deps (kept in assets/jniLibs/libs/tflite-classes.jar)
+libs/tensorflow-lite-2.14.0.aar
+libs/tflite_aar/
+/models/
