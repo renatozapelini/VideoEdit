@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Vídeo Edita Hub</string>
+    <string name="subtitle">Reúne as melhores ferramentas grátis para editar vídeo, desfocar rosto e remover objetos</string>
+    <string name="instructional_title">Como fazer (passo a passo)</string>
+    <string name="instructional_text">
+1. Abra o vídeo no CapCut, InShot ou VN.\n
+2. Para esconder o rosto: use a máscara/desfoque (blur) com rastreamento de rosto, segue automaticamente.\n
+3. Para remover tatuagem: use \"remover objeto\" ou máscara quadro a quadro (clone/estampa) cobrindo a tatuagem em cada frame.\n
+4. Exporte e salve.\n
+\nAtenção: remoção de tatuagem em vídeo ainda é difícil de fazer 100% automático e grátis; costuma exigir edição manual quadro a quadro.
+    </string>
+    <string name="btn_capcut">CapCut — desfocar / mascarar rosto</string>
+    <string name="btn_inshot">InShot — blur / mosaico no rosto</string>
+    <string name="btn_vn">VN Video Editor</string>
+    <string name="btn_removedor">Removedor de objeto / tatuagem (online)</string>
+    <string name="btn_instrucoes">Passo a passo de edição</string>
+    <string name="open_app">Abrir app</string>
+    <string name="nao_instalado">App não instalado. Abrindo loja/site…</string>
+    <string name="aviso">Este app é um hub: reúne e abre ferramentas grátis. O processamento de vídeo é feito em cada ferramenta, não aqui.</string>
+</resources>

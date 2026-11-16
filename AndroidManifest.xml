@@ -1,0 +1,17 @@
+<manifest package="com.buddyapps.videoedithub">
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:label="Vídeo Edita Hub"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:theme="@android:style/Theme.DeviceDefault">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
