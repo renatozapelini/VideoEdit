@@ -39,6 +39,7 @@ public class TattooTrackActivity extends Activity {
     private long durationMs = 0;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private volatile boolean playing = false;
+    private Button drawToggleBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +84,7 @@ public class TattooTrackActivity extends Activity {
         box.addView(step1);
 
         // Step 2 draw
-        LinearLayout step2 = card("② Marcar tatuagem", "1 dedo desenha. 2 dedos: zoom e mover (tela fixa).");
+        LinearLayout step2 = card("② Marcar tatuagem", "Toque em Desenhar para começar, marque a tatuagem e confirme para parar. 2 dedos: zoom e mover (tela fixa).");
         FrameLayout drawContainer = new FrameLayout(this);
         GradientDrawable dBg = bg("#050816", 16); dBg.setStroke(dp(1), Color.parseColor("#334155"));
         drawContainer.setBackground(dBg);
@@ -91,27 +92,38 @@ public class TattooTrackActivity extends Activity {
         dlp.topMargin = dp(6);
         drawContainer.setLayoutParams(dlp);
         drawView = new DrawMaskView(this);
+        drawView.setDrawingEnabled(false);
         drawView.setOnMaskChanged(has -> {
-            maskStatus.setText(has ? "✓ Tatuagem marcada." : "Desenhe sobre a tatuagem.");
-            maskStatus.setTextColor(Color.parseColor(has ? "#34D399" : "#A5B4FC"));
+            if (drawView.isDrawingEnabled()) {
+                maskStatus.setText(has ? "✓ Área marcada. Confirme para parar de desenhar." : "Modo desenho ativo: marque a tatuagem.");
+                maskStatus.setTextColor(Color.parseColor(has ? "#34D399" : "#A5B4FC"));
+            } else {
+                maskStatus.setText(has ? "✓ Tatuagem marcada. Ative Desenhar para ajustar." : "Toque em Desenhar para marcar a tatuagem.");
+                maskStatus.setTextColor(Color.parseColor(has ? "#34D399" : "#A5B4FC"));
+            }
         });
         drawContainer.addView(drawView, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         step2.addView(drawContainer);
 
-        maskStatus = label("Desenhe sobre a tatuagem.");
+        maskStatus = label("Toque em Desenhar para marcar a tatuagem.");
         maskStatus.setTextColor(Color.parseColor("#A5B4FC"));
         maskStatus.setPadding(0, dp(6), 0, 0);
         step2.addView(maskStatus);
 
         LinearLayout drawBtns = new LinearLayout(this); drawBtns.setOrientation(LinearLayout.HORIZONTAL); drawBtns.setPadding(0, dp(6), 0, 0);
+        drawToggleBtn = primaryButton("✏️ Desenhar"); drawToggleBtn.setOnClickListener(v -> toggleDrawing());
         Button undo = secondaryButton("Desfazer"); undo.setOnClickListener(v -> drawView.undo());
         Button clear = secondaryButton("Limpar"); clear.setOnClickListener(v -> drawView.clear());
-        Button loadF = accentButton("Atualizar quadro"); loadF.setOnClickListener(v -> loadSelectedFrame());
         LinearLayout.LayoutParams w1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); w1.rightMargin=dp(6);
         LinearLayout.LayoutParams w2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); w2.rightMargin=dp(6);
         LinearLayout.LayoutParams w3 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        drawBtns.addView(undo,w1); drawBtns.addView(clear,w2); drawBtns.addView(loadF,w3);
+        drawBtns.addView(drawToggleBtn,w1); drawBtns.addView(undo,w2); drawBtns.addView(clear,w3);
         step2.addView(drawBtns);
+
+        LinearLayout drawBtns2 = new LinearLayout(this); drawBtns2.setOrientation(LinearLayout.HORIZONTAL); drawBtns2.setPadding(0, dp(6), 0, 0);
+        Button loadF = accentButton("Atualizar quadro"); loadF.setOnClickListener(v -> loadSelectedFrame());
+        drawBtns2.addView(loadF, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        step2.addView(drawBtns2);
         box.addView(step2);
 
         // Step 3 preview
@@ -175,6 +187,24 @@ public class TattooTrackActivity extends Activity {
         scroll.addView(box);
         root.addView(scroll);
         setContentView(root);
+    }
+
+    private void toggleDrawing() {
+        boolean now = !drawView.isDrawingEnabled();
+        drawView.setDrawingEnabled(now);
+        if (now) {
+            drawToggleBtn.setText("✓ Confirmar desenho");
+            GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{Color.parseColor("#059669"), Color.parseColor("#10B981")}); g.setCornerRadius(dp(14));
+            drawToggleBtn.setBackground(g);
+            maskStatus.setText(drawView.hasMask() ? "✓ Área marcada. Ajuste ou confirme para parar." : "Modo desenho ativo: marque a tatuagem.");
+            maskStatus.setTextColor(Color.parseColor("#A5B4FC"));
+        } else {
+            drawToggleBtn.setText("✏️ Desenhar");
+            GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{Color.parseColor("#2563EB"), Color.parseColor("#7C3AED")}); g.setCornerRadius(dp(14));
+            drawToggleBtn.setBackground(g);
+            maskStatus.setText(drawView.hasMask() ? "✓ Tatuagem marcada. Pronto para rastrear." : "Toque em Desenhar para marcar a tatuagem.");
+            maskStatus.setTextColor(Color.parseColor(drawView.hasMask() ? "#34D399" : "#A5B4FC"));
+        }
     }
 
     private void pickVideo() {
