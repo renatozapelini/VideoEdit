@@ -1,17 +1,18 @@
 # VideoEdit (Vídeo Edita Hub)
 
-App Android hub que reúne ferramentas grátis para:
-- Desfocar/mascarar rosto em vídeo (ex.: CapCut, InShot, VN)
-- Ajudar no fluxo para remover tatuagem/objetos em vídeo (edição com máscara/clone quadro a quadro; opções online)
+App Android com duas frentes para edição de vídeo:
+- **Local (no aparelho):** seleção de vídeo, prévia de quadro e aplicação de borrão leve na região do rosto preservando a parte inferior (para manter a boca visível) e cobertura/borrão manual em área (apoio para tatuagem). Processamento local completo de vídeo/reastreio automático exige modelos/bibliotecas avançadas.
+- **IA (ferramentas/serviços):** atalhos e fluxo para usar IAs que rastreiam e removem tatuagens/objetos e aplicam borrão facial preservando a boca.
+
+## Requisitos atendidos no fluxo
+- Rastrear e remover tatuagem: via ferramentas de IA com marcação/rastreio (seção IA); local oferece marcação/cobertura manual de apoio.
+- Borrão leve no rosto mantendo boca visível: prévia local preserva faixa inferior da região facial; ferramentas de IA indicadas para detecção automática.
 
 ## Estrutura
 - `AndroidManifest.xml`
 - `app.properties`
-- `java/com/buddyapps/videoedithub/MainActivity.java`
+- `java/com/buddyapps/videoedithub/*.java`
 - `res/values/strings.xml`
 
 ## Build
-Projeto simples em Java puro (sem Gradle/AndroidX), pensado para build no ambiente Buddy com os scripts de `android-app` skill (`setup-toolchain.sh` e `build-apk.sh`), quando o toolchain compatível estiver disponível.
-
-## Aviso
-Este app é um hub: abre/reúne ferramentas; o processamento de vídeo é feito em cada ferramenta.
+Projeto em Java puro (sem Gradle/AndroidX). Pode ser compilado com os scripts da skill `android-app` (quando houver `aapt2` compatível) ou via GitHub Actions (workflow incluído, requer permissão `workflow` no token para push).
