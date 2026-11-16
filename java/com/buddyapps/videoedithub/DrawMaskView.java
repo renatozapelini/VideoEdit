@@ -29,6 +29,7 @@ public class DrawMaskView extends View {
     private RectF imageRect = new RectF();
     private RectF drawnBounds = null;
     private OnMaskChanged listener;
+    private boolean drawing = false;
 
     public DrawMaskView(Context c) {
         super(c);
@@ -46,6 +47,7 @@ public class DrawMaskView extends View {
         guidePaint.setAntiAlias(true);
         setBackgroundColor(Color.parseColor("#020617"));
         setClickable(true);
+        setLongClickable(true);
     }
 
     public void setOnMaskChanged(OnMaskChanged l){ this.listener = l; }
@@ -113,6 +115,15 @@ public class DrawMaskView extends View {
     }
 
     @Override
+    public boolean dispatchTouchEvent(MotionEvent e) {
+        if (bitmap != null) {
+            if (e.getActionMasked() == MotionEvent.ACTION_DOWN) disallowParents(true);
+            else if (e.getActionMasked() == MotionEvent.ACTION_MOVE || e.getActionMasked() == MotionEvent.ACTION_UP || e.getActionMasked() == MotionEvent.ACTION_CANCEL) disallowParents(true);
+        }
+        return super.dispatchTouchEvent(e);
+    }
+
+    @Override
     public boolean onTouchEvent(MotionEvent e) {
         if (bitmap == null) return false;
         float[] pts = {e.getX(), e.getY()};
@@ -122,36 +133,43 @@ public class DrawMaskView extends View {
         y = Math.max(0, Math.min(bitmap.getHeight()-1, y));
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                drawing = true;
                 disallowParents(true);
                 currentPath.reset();
                 currentPath.moveTo(x, y);
                 invalidate();
                 return true;
             case MotionEvent.ACTION_MOVE:
-                currentPath.lineTo(x, y);
-                invalidate();
+                if (drawing) {
+                    disallowParents(true);
+                    currentPath.lineTo(x, y);
+                    invalidate();
+                }
                 return true;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                currentPath.lineTo(x, y);
-                RectF tb = new RectF(); currentPath.computeBounds(tb, true);
-                if (tb.width() < 8 && tb.height() < 8) {
+                if (drawing) {
+                    currentPath.lineTo(x, y);
+                    RectF tb = new RectF(); currentPath.computeBounds(tb, true);
+                    if (tb.width() < 8 && tb.height() < 8) {
+                        currentPath.reset();
+                        currentPath.addCircle(x, y, Math.max(18f, Math.min(bitmap.getWidth(), bitmap.getHeight())*0.03f), Path.Direction.CW);
+                    }
+                    currentPath.close();
+                    Path saved = new Path(currentPath);
+                    paths.add(saved);
+                    RectF b = new RectF();
+                    saved.computeBounds(b, true);
+                    if (drawnBounds == null) drawnBounds = new RectF(b); else drawnBounds.union(b);
                     currentPath.reset();
-                    currentPath.addCircle(x, y, Math.max(18f, Math.min(bitmap.getWidth(), bitmap.getHeight())*0.03f), Path.Direction.CW);
+                    invalidate();
+                    notifyChanged();
                 }
-                currentPath.close();
-                Path saved = new Path(currentPath);
-                paths.add(saved);
-                RectF b = new RectF();
-                saved.computeBounds(b, true);
-                if (drawnBounds == null) drawnBounds = new RectF(b); else drawnBounds.union(b);
-                currentPath.reset();
-                invalidate();
-                notifyChanged();
+                drawing = false;
                 disallowParents(false);
                 return true;
         }
-        return super.onTouchEvent(e);
+        return true;
     }
 
     private void notifyChanged(){ if (listener != null) listener.onChanged(hasMask()); }
