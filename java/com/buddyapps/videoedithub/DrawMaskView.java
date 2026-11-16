@@ -7,11 +7,10 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +45,7 @@ public class DrawMaskView extends View {
         guidePaint.setTextSize(42f);
         guidePaint.setAntiAlias(true);
         setBackgroundColor(Color.parseColor("#020617"));
+        setClickable(true);
     }
 
     public void setOnMaskChanged(OnMaskChanged l){ this.listener = l; }
@@ -82,14 +82,14 @@ public class DrawMaskView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (bitmap == null) {
-            canvas.drawText("Selecione um vídeo para começar", 40, getHeight()/2f, guidePaint);
+            Paint p = new Paint(guidePaint); p.setColor(Color.parseColor("#94A3B8")); p.setTextSize(36f);
+            canvas.drawText("Selecione um vídeo para começar", 40, getHeight()/2f, p);
             return;
         }
         updateMatrix();
         canvas.drawBitmap(bitmap, matrix, bmpPaint);
-        // dim outside drawing hint lightly? keep simple
-        for (Path p : paths) {
-            Path vp = new Path(p); vp.transform(matrix);
+        for (Path pth : paths) {
+            Path vp = new Path(pth); vp.transform(matrix);
             canvas.drawPath(vp, fillPaint);
             canvas.drawPath(vp, strokePaint);
         }
@@ -99,8 +99,16 @@ public class DrawMaskView extends View {
             canvas.drawPath(vp, strokePaint);
         }
         if (paths.isEmpty() && currentPath.isEmpty()) {
-            Paint p = new Paint(guidePaint); p.setColor(Color.parseColor("#94A3B8")); p.setTextSize(36f);
+            Paint p = new Paint(guidePaint); p.setColor(Color.parseColor("#E2E8F0")); p.setTextSize(34f);
             canvas.drawText("Desenhe com o dedo sobre a tatuagem", 30, 60, p);
+        }
+    }
+
+    private void disallowParents(boolean disallow) {
+        ViewParent p = getParent();
+        while (p != null) {
+            p.requestDisallowInterceptTouchEvent(disallow);
+            p = p.getParent();
         }
     }
 
@@ -114,7 +122,7 @@ public class DrawMaskView extends View {
         y = Math.max(0, Math.min(bitmap.getHeight()-1, y));
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                getParent().requestDisallowInterceptTouchEvent(true);
+                disallowParents(true);
                 currentPath.reset();
                 currentPath.moveTo(x, y);
                 invalidate();
@@ -126,7 +134,6 @@ public class DrawMaskView extends View {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
                 currentPath.lineTo(x, y);
-                // if tiny tap, make small circle
                 RectF tb = new RectF(); currentPath.computeBounds(tb, true);
                 if (tb.width() < 8 && tb.height() < 8) {
                     currentPath.reset();
@@ -141,7 +148,7 @@ public class DrawMaskView extends View {
                 currentPath.reset();
                 invalidate();
                 notifyChanged();
-                getParent().requestDisallowInterceptTouchEvent(false);
+                disallowParents(false);
                 return true;
         }
         return super.onTouchEvent(e);
@@ -149,20 +156,9 @@ public class DrawMaskView extends View {
 
     private void notifyChanged(){ if (listener != null) listener.onChanged(hasMask()); }
 
-    public void clear() {
-        paths.clear();
-        currentPath.reset();
-        drawnBounds = null;
-        invalidate();
-        notifyChanged();
-    }
+    public void clear() { paths.clear(); currentPath.reset(); drawnBounds = null; invalidate(); notifyChanged(); }
 
-    public void undo() {
-        if (!paths.isEmpty()) paths.remove(paths.size()-1);
-        recomputeBounds();
-        invalidate();
-        notifyChanged();
-    }
+    public void undo() { if (!paths.isEmpty()) paths.remove(paths.size()-1); recomputeBounds(); invalidate(); notifyChanged(); }
 
     private void recomputeBounds(){
         drawnBounds = null;
