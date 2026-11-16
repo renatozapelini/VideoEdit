@@ -7,6 +7,8 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
@@ -15,27 +17,38 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DrawMaskView extends View {
+    public interface OnMaskChanged { void onChanged(boolean hasMask); }
     private Bitmap bitmap;
     private final Matrix matrix = new Matrix();
     private final Matrix inverse = new Matrix();
     private final Paint bmpPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private final Paint strokePaint = new Paint();
     private final Paint fillPaint = new Paint();
+    private final Paint guidePaint = new Paint();
     private final Path currentPath = new Path();
     private final List<Path> paths = new ArrayList<>();
     private RectF imageRect = new RectF();
     private RectF drawnBounds = null;
+    private OnMaskChanged listener;
 
     public DrawMaskView(Context c) {
         super(c);
-        strokePaint.setColor(Color.parseColor("#FF5252"));
+        strokePaint.setColor(Color.parseColor("#22D3EE"));
         strokePaint.setStyle(Paint.Style.STROKE);
-        strokePaint.setStrokeWidth(8f);
+        strokePaint.setStrokeWidth(10f);
+        strokePaint.setStrokeJoin(Paint.Join.ROUND);
+        strokePaint.setStrokeCap(Paint.Cap.ROUND);
         strokePaint.setAntiAlias(true);
-        fillPaint.setColor(0x55FF5252);
+        fillPaint.setColor(0x4422D3EE);
         fillPaint.setStyle(Paint.Style.FILL);
-        setBackgroundColor(Color.parseColor("#0B1220"));
+        fillPaint.setAntiAlias(true);
+        guidePaint.setColor(Color.parseColor("#64748B"));
+        guidePaint.setTextSize(42f);
+        guidePaint.setAntiAlias(true);
+        setBackgroundColor(Color.parseColor("#020617"));
     }
+
+    public void setOnMaskChanged(OnMaskChanged l){ this.listener = l; }
 
     public void setBitmap(Bitmap b) {
         this.bitmap = b;
@@ -44,13 +57,11 @@ public class DrawMaskView extends View {
         drawnBounds = null;
         requestLayout();
         invalidate();
+        notifyChanged();
     }
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        updateMatrix();
-    }
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) { super.onSizeChanged(w, h, oldw, oldh); updateMatrix(); }
 
     private void updateMatrix() {
         if (bitmap == null || getWidth() == 0 || getHeight() == 0) return;
@@ -70,23 +81,27 @@ public class DrawMaskView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (bitmap == null) return;
+        if (bitmap == null) {
+            canvas.drawText("Selecione um vídeo para começar", 40, getHeight()/2f, guidePaint);
+            return;
+        }
         updateMatrix();
         canvas.drawBitmap(bitmap, matrix, bmpPaint);
+        // dim outside drawing hint lightly? keep simple
         for (Path p : paths) {
-            canvas.drawPath(transformToView(p), fillPaint);
-            canvas.drawPath(transformToView(p), strokePaint);
+            Path vp = new Path(p); vp.transform(matrix);
+            canvas.drawPath(vp, fillPaint);
+            canvas.drawPath(vp, strokePaint);
         }
         if (!currentPath.isEmpty()) {
-            canvas.drawPath(transformToView(currentPath), fillPaint);
-            canvas.drawPath(transformToView(currentPath), strokePaint);
+            Path vp = new Path(currentPath); vp.transform(matrix);
+            canvas.drawPath(vp, fillPaint);
+            canvas.drawPath(vp, strokePaint);
         }
-    }
-
-    private Path transformToView(Path srcInBitmap) {
-        Path p = new Path(srcInBitmap);
-        p.transform(matrix);
-        return p;
+        if (paths.isEmpty() && currentPath.isEmpty()) {
+            Paint p = new Paint(guidePaint); p.setColor(Color.parseColor("#94A3B8")); p.setTextSize(36f);
+            canvas.drawText("Desenhe com o dedo sobre a tatuagem", 30, 60, p);
+        }
     }
 
     @Override
@@ -95,11 +110,11 @@ public class DrawMaskView extends View {
         float[] pts = {e.getX(), e.getY()};
         inverse.mapPoints(pts);
         float x = pts[0], y = pts[1];
-        // clamp to bitmap
         x = Math.max(0, Math.min(bitmap.getWidth()-1, x));
         y = Math.max(0, Math.min(bitmap.getHeight()-1, y));
-        switch (e.getAction()) {
+        switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                getParent().requestDisallowInterceptTouchEvent(true);
                 currentPath.reset();
                 currentPath.moveTo(x, y);
                 invalidate();
@@ -109,7 +124,14 @@ public class DrawMaskView extends View {
                 invalidate();
                 return true;
             case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
                 currentPath.lineTo(x, y);
+                // if tiny tap, make small circle
+                RectF tb = new RectF(); currentPath.computeBounds(tb, true);
+                if (tb.width() < 8 && tb.height() < 8) {
+                    currentPath.reset();
+                    currentPath.addCircle(x, y, Math.max(18f, Math.min(bitmap.getWidth(), bitmap.getHeight())*0.03f), Path.Direction.CW);
+                }
                 currentPath.close();
                 Path saved = new Path(currentPath);
                 paths.add(saved);
@@ -118,28 +140,44 @@ public class DrawMaskView extends View {
                 if (drawnBounds == null) drawnBounds = new RectF(b); else drawnBounds.union(b);
                 currentPath.reset();
                 invalidate();
+                notifyChanged();
+                getParent().requestDisallowInterceptTouchEvent(false);
                 return true;
         }
         return super.onTouchEvent(e);
     }
+
+    private void notifyChanged(){ if (listener != null) listener.onChanged(hasMask()); }
 
     public void clear() {
         paths.clear();
         currentPath.reset();
         drawnBounds = null;
         invalidate();
+        notifyChanged();
+    }
+
+    public void undo() {
+        if (!paths.isEmpty()) paths.remove(paths.size()-1);
+        recomputeBounds();
+        invalidate();
+        notifyChanged();
+    }
+
+    private void recomputeBounds(){
+        drawnBounds = null;
+        for (Path p: paths){ RectF b=new RectF(); p.computeBounds(b,true); if(drawnBounds==null) drawnBounds=new RectF(b); else drawnBounds.union(b);}        
     }
 
     public RectF getDrawnBoundsInBitmap() {
-        if (drawnBounds == null) return null;
+        if (drawnBounds == null || bitmap == null) return null;
         RectF r = new RectF(drawnBounds);
-        // clamp
         r.left = Math.max(0, r.left); r.top = Math.max(0, r.top);
-        r.right = Math.min(bitmap != null ? bitmap.getWidth() : r.right, r.right);
-        r.bottom = Math.min(bitmap != null ? bitmap.getHeight() : r.bottom, r.bottom);
+        r.right = Math.min(bitmap.getWidth(), r.right);
+        r.bottom = Math.min(bitmap.getHeight(), r.bottom);
         if (r.width() < 5 || r.height() < 5) return null;
         return r;
     }
 
-    public boolean hasMask() { return drawnBounds != null; }
+    public boolean hasMask() { return drawnBounds != null && !paths.isEmpty(); }
 }
