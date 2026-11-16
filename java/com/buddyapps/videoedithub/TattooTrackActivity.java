@@ -143,7 +143,7 @@ public class TattooTrackActivity extends Activity {
         row.addView(il, ilp); row.addView(intensitySeek, isp);
         step3.addView(row);
 
-        Button previewBtn = secondaryButton("Ver preview");
+        previewBtn = secondaryButton("Ver preview");
         previewBtn.setOnClickListener(v -> runSingleFramePreview());
         step3.addView(previewBtn);
 
@@ -260,8 +260,9 @@ public class TattooTrackActivity extends Activity {
                         status.setText("Quadro pronto. Dê zoom e marque a tatuagem.");
                     } else status.setText("Não foi possível carregar o quadro.");
                 });
-            } catch (Exception e) {
-                handler.post(() -> status.setText("Erro ao ler vídeo: " + e.getMessage()));
+            } catch (Throwable e) {
+                final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                handler.post(() -> status.setText("Erro ao ler vídeo: " + msg));
             }
         }).start();
     }
@@ -316,10 +317,11 @@ public class TattooTrackActivity extends Activity {
                     previewBtn.setText("Ver preview");
                     previewStatus.setText("✓ Prévia pronta (1 frame). Ajuste a intensidade e clique em Gerar.");
                 });
-            } catch (Exception e) {
+            } catch (Throwable e) {
+                final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 handler.post(() -> {
                     previewBtn.setText("Ver preview");
-                    previewStatus.setText("Erro na prévia: " + e.getMessage());
+                    previewStatus.setText("Erro na prévia: " + msg);
                 });
             }
         }).start();
@@ -385,8 +387,9 @@ public class TattooTrackActivity extends Activity {
                         previewStatus.setText("✓ Prévia contínua pronta (" + previewFrames.size() + " quadros). Reproduza para conferir o rastreio.");
                     } else previewStatus.setText("Falha ao gerar prévia.");
                 });
-            } catch (Exception e) {
-                handler.post(() -> previewStatus.setText("Erro no rastreio: " + e.getMessage()));
+            } catch (Throwable e) {
+                final String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                handler.post(() -> previewStatus.setText("Erro no rastreio: " + msg));
             }
         }).start();
     }
