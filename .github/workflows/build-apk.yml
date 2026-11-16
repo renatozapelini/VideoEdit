@@ -107,12 +107,11 @@ jobs:
           PY
 
           echo "5/5 Sign"
-          KEYDIR="$RUNNER_TEMP/keys"
-          mkdir -p "$KEYDIR"
-          PASS=$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24)
-          keytool -genkeypair -keystore "$KEYDIR/apps.jks" -alias apps -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "$PASS" -keypass "$PASS" -dname "CN=VideoEdit CI" >/dev/null 2>&1
-          "$BT/apksigner" sign --ks "$KEYDIR/apps.jks" --ks-key-alias apps --ks-pass "pass:$PASS" \
+          KEYSTORE="$P/keys/release.jks"
+          if [ ! -f "$KEYSTORE" ]; then
+            echo "Missing keystore at $KEYSTORE" >&2; exit 1
+          fi
+          "$BT/apksigner" sign --ks "$KEYSTORE" --ks-key-alias videoedit --ks-pass pass:videoeditpass --key-pass pass:videoeditpass \
             --out "$OUT/VideoEdit.apk" "$OUT/aligned.apk"
           "$BT/apksigner" verify "$OUT/VideoEdit.apk"
           echo "Built $OUT/VideoEdit.apk"
