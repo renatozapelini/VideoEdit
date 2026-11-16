@@ -52,101 +52,101 @@ public class TattooTrackActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(16);
-        box.setPadding(pad, dp(20), pad, dp(24));
+        box.setPadding(pad, dp(22), pad, dp(28));
 
         TextView title = new TextView(this);
-        title.setText("Editor de Tatuagem");
+        title.setText("Rastreio de Tatuagem");
         title.setTextColor(Color.WHITE);
-        title.setTextSize(26);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextSize(27);
+        title.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
         title.setGravity(Gravity.CENTER);
         box.addView(title);
 
         TextView sub = new TextView(this);
-        sub.setText("Desenhe sobre a tatuagem • Rastreamento automático • Pré-visualização antes de aplicar");
-        sub.setTextColor(Color.parseColor("#B6C2D9"));
+        sub.setText("Desenhe com precisão • Dê zoom no vídeo • Rastreie e visualize o resultado");
+        sub.setTextColor(Color.parseColor("#A5B4FC"));
         sub.setTextSize(13);
         sub.setGravity(Gravity.CENTER);
-        sub.setPadding(0, dp(6), 0, dp(16));
+        sub.setPadding(0, dp(6), 0, dp(18));
         box.addView(sub);
 
         // Step 1
-        LinearLayout step1 = card("1. Vídeo", "Selecione o vídeo e escolha o quadro onde a tatuagem aparece bem.");
+        LinearLayout step1 = card("①  Selecionar vídeo", "Escolha o vídeo e o quadro onde a tatuagem está mais visível.");
         Button pick = primaryButton("Selecionar vídeo");
         pick.setOnClickListener(v -> pickVideo());
         step1.addView(pick);
         status = label("Nenhum vídeo selecionado.");
-        status.setPadding(0, dp(8), 0, 0);
+        status.setPadding(0, dp(10), 0, 0);
         step1.addView(status);
-        TextView fs = small("Posição do quadro");
-        fs.setPadding(0, dp(10), 0, dp(4));
-        step1.addView(fs);
-        frameSeek = new SeekBar(this); frameSeek.setMax(100);
-        frameSeek.setOnSeekBarChangeListener(simpleSeek(() -> loadSelectedFrame()));
-        step1.addView(frameSeek);
+        TextView fs = small("Posição do quadro"); fs.setPadding(0, dp(12), 0, dp(4)); step1.addView(fs);
+        frameSeek = styledSeek(100); frameSeek.setOnSeekBarChangeListener(simpleSeek(this::loadSelectedFrame)); step1.addView(frameSeek);
         box.addView(step1);
 
         // Step 2 draw
-        LinearLayout step2 = card("2. Desenhe a tatuagem", "Passe o dedo por cima da tatuagem para marcar a área. Você pode fazer vários traços.");
+        LinearLayout step2 = card("②  Desenhar a tatuagem", "Use 1 dedo para desenhar sobre a tatuagem. Use 2 dedos para dar zoom e mover o vídeo.");
         FrameLayout drawContainer = new FrameLayout(this);
-        GradientDrawable dBg = bg("#020617", 16); dBg.setStroke(dp(1), Color.parseColor("#334155"));
+        GradientDrawable dBg = bg("#050816", 18); dBg.setStroke(dp(1), Color.parseColor("#334155"));
         drawContainer.setBackground(dBg);
-        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(360));
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(380));
         dlp.topMargin = dp(8);
         drawContainer.setLayoutParams(dlp);
         drawView = new DrawMaskView(this);
-        drawView.setOnMaskChanged(has -> maskStatus.setText(has ? "✓ Área da tatuagem marcada. Pronto para rastrear." : "Nenhuma marcação ainda. Desenhe sobre a tatuagem."));
+        drawView.setOnMaskChanged(has -> {
+            maskStatus.setText(has ? "✓ Tatuagem marcada. Você já pode rastrear." : "Desenhe sobre a tatuagem para marcar a área.");
+            maskStatus.setTextColor(Color.parseColor(has ? "#34D399" : "#A5B4FC"));
+        });
         drawContainer.addView(drawView, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         step2.addView(drawContainer);
 
-        maskStatus = label("Nenhuma marcação ainda. Desenhe sobre a tatuagem.");
-        maskStatus.setTextColor(Color.parseColor("#22D3EE"));
-        maskStatus.setPadding(0, dp(8), 0, 0);
+        maskStatus = label("Desenhe sobre a tatuagem para marcar a área.");
+        maskStatus.setTextColor(Color.parseColor("#A5B4FC"));
+        maskStatus.setPadding(0, dp(10), 0, 0);
         step2.addView(maskStatus);
 
-        LinearLayout drawBtns = new LinearLayout(this); drawBtns.setOrientation(LinearLayout.HORIZONTAL); drawBtns.setPadding(0, dp(8), 0, 0);
+        LinearLayout drawBtns = new LinearLayout(this); drawBtns.setOrientation(LinearLayout.HORIZONTAL); drawBtns.setPadding(0, dp(10), 0, 0);
         Button undo = secondaryButton("Desfazer"); undo.setOnClickListener(v -> drawView.undo());
         Button clear = secondaryButton("Limpar"); clear.setOnClickListener(v -> drawView.clear());
-        Button loadF = secondaryButton("Atualizar quadro"); loadF.setOnClickListener(v -> loadSelectedFrame());
-        LinearLayout.LayoutParams w1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); w1.rightMargin=dp(6);
-        LinearLayout.LayoutParams w2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); w2.rightMargin=dp(6);
+        Button loadF = accentButton("Atualizar quadro"); loadF.setOnClickListener(v -> loadSelectedFrame());
+        LinearLayout.LayoutParams w1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); w1.rightMargin=dp(8);
+        LinearLayout.LayoutParams w2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); w2.rightMargin=dp(8);
         LinearLayout.LayoutParams w3 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         drawBtns.addView(undo,w1); drawBtns.addView(clear,w2); drawBtns.addView(loadF,w3);
         step2.addView(drawBtns);
         box.addView(step2);
 
         // Step 3 preview
-        LinearLayout step3 = card("3. Rastrear e pré-visualizar", "O app segue a área desenhada ao longo do vídeo e mostra como ficará.");
-        TextView il = small("Intensidade da cobertura/remoção"); il.setPadding(0,0,0,dp(4)); step3.addView(il);
-        intensitySeek = new SeekBar(this); intensitySeek.setMax(25); intensitySeek.setProgress(12); step3.addView(intensitySeek);
-        Button trackBtn = primaryButton("Gerar rastreio + pré-visualização");
+        LinearLayout step3 = card("③  Rastrear e pré-visualizar", "O app segue a marcação quadro a quadro e mostra como ficará o resultado.");
+        TextView il = small("Intensidade da cobertura"); il.setPadding(0,0,0,dp(4)); step3.addView(il);
+        intensitySeek = styledSeek(25); intensitySeek.setProgress(12); step3.addView(intensitySeek);
+        Button trackBtn = primaryButton("Gerar rastreio e pré-visualização");
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        tlp.topMargin = dp(10);
+        tlp.topMargin = dp(12);
         trackBtn.setLayoutParams(tlp);
         trackBtn.setOnClickListener(v -> runTrackingPreview());
         step3.addView(trackBtn);
 
-        previewStatus = label("Pré-visualização aparecerá aqui.");
-        previewStatus.setPadding(0, dp(10), 0, dp(6));
+        previewStatus = label("A pré-visualização aparecerá aqui.");
+        previewStatus.setPadding(0, dp(12), 0, dp(8));
         step3.addView(previewStatus);
 
         FrameLayout pvBox = new FrameLayout(this);
-        GradientDrawable pBg = bg("#020617", 16); pBg.setStroke(dp(1), Color.parseColor("#334155"));
+        GradientDrawable pBg = bg("#050816", 18); pBg.setStroke(dp(1), Color.parseColor("#334155"));
         pvBox.setBackground(pBg);
-        LinearLayout.LayoutParams pvlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(340));
+        LinearLayout.LayoutParams pvlp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(350));
         pvBox.setLayoutParams(pvlp);
         previewView = new ImageView(this);
         previewView.setAdjustViewBounds(true);
         previewView.setScaleType(ImageView.ScaleType.FIT_CENTER);
         pvBox.addView(previewView, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         TextView pvHint = new TextView(this);
-        pvHint.setText("Pré-visualização");
+        pvHint.setText("Pré-visualização do resultado");
         pvHint.setTextColor(Color.parseColor("#475569"));
+        pvHint.setTextSize(15);
         pvHint.setGravity(Gravity.CENTER);
         pvBox.addView(pvHint, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         step3.addView(pvBox);
 
-        previewSeekRef = new SeekBar(this); previewSeekRef.setMax(0);
+        previewSeekRef = styledSeek(0);
         previewSeekRef.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser && !previewFrames.isEmpty() && progress < previewFrames.size()) previewView.setImageBitmap(previewFrames.get(progress));
@@ -156,10 +156,10 @@ public class TattooTrackActivity extends Activity {
         });
         step3.addView(previewSeekRef);
 
-        LinearLayout pvBtns = new LinearLayout(this); pvBtns.setOrientation(LinearLayout.HORIZONTAL); pvBtns.setPadding(0, dp(6), 0, 0);
-        Button play = primaryButton("▶ Reproduzir prévia"); play.setOnClickListener(v -> playPreview());
+        LinearLayout pvBtns = new LinearLayout(this); pvBtns.setOrientation(LinearLayout.HORIZONTAL); pvBtns.setPadding(0, dp(8), 0, 0);
+        Button play = primaryButton("▶ Reproduzir"); play.setOnClickListener(v -> playPreview());
         Button stop = secondaryButton("Parar"); stop.setOnClickListener(v -> playing = false);
-        LinearLayout.LayoutParams pb1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); pb1.rightMargin=dp(6);
+        LinearLayout.LayoutParams pb1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1); pb1.rightMargin=dp(8);
         LinearLayout.LayoutParams pb2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         pvBtns.addView(play,pb1); pvBtns.addView(stop,pb2);
         step3.addView(pvBtns);
@@ -206,7 +206,7 @@ public class TattooTrackActivity extends Activity {
                 handler.post(() -> {
                     if (b != null) {
                         drawView.setBitmap(b);
-                        status.setText("Quadro pronto. Desenhe sobre a tatuagem na área abaixo.");
+                        status.setText("Quadro pronto. Dê zoom e desenhe sobre a tatuagem.");
                     } else status.setText("Não foi possível carregar o quadro.");
                 });
             } catch (Exception e) {
@@ -218,9 +218,9 @@ public class TattooTrackActivity extends Activity {
     private void runTrackingPreview() {
         if (videoUri == null) { Toast.makeText(this, "Selecione um vídeo.", Toast.LENGTH_SHORT).show(); return; }
         RectF bounds = drawView.getDrawnBoundsInBitmap();
-        if (bounds == null) { Toast.makeText(this, "Desenhe sobre a tatuagem primeiro (passo 2).", Toast.LENGTH_LONG).show(); return; }
+        if (bounds == null) { Toast.makeText(this, "Desenhe sobre a tatuagem primeiro.", Toast.LENGTH_LONG).show(); return; }
         playing = false;
-        previewStatus.setText("Rastreando a tatuagem e gerando pré-visualização...");
+        previewStatus.setText("Analisando quadros e rastreando a tatuagem...");
         previewFrames.clear();
         frames.clear();
         new Thread(() -> {
@@ -265,7 +265,7 @@ public class TattooTrackActivity extends Activity {
                     if (!previewFrames.isEmpty()) {
                         previewView.setImageBitmap(previewFrames.get(0));
                         if (previewSeekRef != null) { previewSeekRef.setMax(previewFrames.size()-1); previewSeekRef.setProgress(0); }
-                        previewStatus.setText("✓ Pré-visualização pronta (" + previewFrames.size() + " quadros). Arraste ou toque em Reproduzir para ver o rastreio.");
+                        previewStatus.setText("✓ Pré-visualização pronta (" + previewFrames.size() + " quadros). Confira se o rastreio ficou correto.");
                     } else previewStatus.setText("Falha ao gerar prévia.");
                 });
             } catch (Exception e) {
@@ -275,7 +275,7 @@ public class TattooTrackActivity extends Activity {
     }
 
     private void playPreview() {
-        if (previewFrames.isEmpty()) { Toast.makeText(this, "Gere a pré-visualização primeiro (passo 3).", Toast.LENGTH_SHORT).show(); return; }
+        if (previewFrames.isEmpty()) { Toast.makeText(this, "Gere a pré-visualização primeiro.", Toast.LENGTH_SHORT).show(); return; }
         if (playing) { playing = false; return; }
         playing = true;
         new Thread(() -> {
@@ -285,7 +285,7 @@ public class TattooTrackActivity extends Activity {
                 handler.post(() -> { previewView.setImageBitmap(previewFrames.get(idx)); if (previewSeekRef != null) previewSeekRef.setProgress(idx); });
                 try { Thread.sleep(320); } catch (InterruptedException ignored) {}
                 i++;
-                if (i >= previewFrames.size()) i = 0; // loop
+                if (i >= previewFrames.size()) i = 0;
             }
             playing = false;
         }).start();
@@ -294,26 +294,33 @@ public class TattooTrackActivity extends Activity {
     private LinearLayout card(String title, String desc) {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable g = bg("#111827", 20);
-        g.setStroke(dp(1), Color.parseColor("#1F2A44"));
+        GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.parseColor("#151B2E"), Color.parseColor("#101827")});
+        g.setCornerRadius(dp(22));
+        g.setStroke(dp(1), Color.parseColor("#26324A"));
         c.setBackground(g);
         c.setPadding(dp(16), dp(16), dp(16), dp(16));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.bottomMargin = dp(14);
         c.setLayoutParams(lp);
-        TextView t = new TextView(this); t.setText(title); t.setTextColor(Color.WHITE); t.setTextSize(18); t.setTypeface(Typeface.DEFAULT_BOLD);
+        TextView t = new TextView(this); t.setText(title); t.setTextColor(Color.WHITE); t.setTextSize(18); t.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
         c.addView(t);
-        TextView d = new TextView(this); d.setText(desc); d.setTextColor(Color.parseColor("#9FB0CC")); d.setTextSize(13); d.setPadding(0, dp(4), 0, dp(10));
+        TextView d = new TextView(this); d.setText(desc); d.setTextColor(Color.parseColor("#9DB0D0")); d.setTextSize(13); d.setPadding(0, dp(5), 0, dp(12));
         c.addView(d);
         return c;
     }
-    private TextView label(String t){ TextView v=new TextView(this); v.setText(t); v.setTextColor(Color.parseColor("#E2E8F0")); v.setTextSize(14); return v; }
-    private TextView small(String t){ TextView v=new TextView(this); v.setText(t); v.setTextColor(Color.parseColor("#94A3B8")); v.setTextSize(12); return v; }
-    private Button primaryButton(String t){ Button b=new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.WHITE); b.setTypeface(Typeface.DEFAULT_BOLD); b.setBackground(bg("#2563EB",14)); b.setPadding(dp(14),dp(12),dp(14),dp(12)); return b; }
-    private Button secondaryButton(String t){ Button b=new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.parseColor("#E2E8F0")); b.setBackground(bg("#243041",12)); b.setPadding(dp(10),dp(10),dp(10),dp(10)); return b; }
+    private TextView label(String t){ TextView v=new TextView(this); v.setText(t); v.setTextColor(Color.parseColor("#E6EDF8")); v.setTextSize(14); return v; }
+    private TextView small(String t){ TextView v=new TextView(this); v.setText(t); v.setTextColor(Color.parseColor("#8FA3C4")); v.setTextSize(12); return v; }
+    private Button primaryButton(String t){ Button b=new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.WHITE); b.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{Color.parseColor("#2563EB"), Color.parseColor("#7C3AED")}); g.setCornerRadius(dp(16));
+        b.setBackground(g); b.setPadding(dp(14),dp(12),dp(14),dp(12)); return b; }
+    private Button secondaryButton(String t){ Button b=new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.parseColor("#E2E8F0"));
+        GradientDrawable g=bg("#243044",14); g.setStroke(dp(1), Color.parseColor("#334155")); b.setBackground(g); b.setPadding(dp(10),dp(10),dp(10),dp(10)); return b; }
+    private Button accentButton(String t){ Button b=new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.parseColor("#E0F2FE"));
+        GradientDrawable g=bg("#0F766E",14); b.setBackground(g); b.setPadding(dp(10),dp(10),dp(10),dp(10)); return b; }
+    private SeekBar styledSeek(int max){ SeekBar s=new SeekBar(this); s.setMax(max); return s; }
     private GradientDrawable bg(String color,int r){ GradientDrawable g=new GradientDrawable(); g.setColor(Color.parseColor(color)); g.setCornerRadius(dp(r)); return g; }
-    private GradientDrawable makeGradient(){ GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.parseColor("#0B1220"), Color.parseColor("#0F172A"), Color.parseColor("#111827")}); g.setCornerRadius(0); return g; }
+    private GradientDrawable makeGradient(){ return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.parseColor("#070B18"), Color.parseColor("#0B1220"), Color.parseColor("#111827")}); }
     private int dp(int v){ return Math.round(getResources().getDisplayMetrics().density * v); }
-
     private SeekBar.OnSeekBarChangeListener simpleSeek(Runnable onStop){ return new SeekBar.OnSeekBarChangeListener(){ @Override public void onProgressChanged(SeekBar seekBar,int progress,boolean fromUser){} @Override public void onStartTrackingTouch(SeekBar seekBar){} @Override public void onStopTrackingTouch(SeekBar seekBar){ onStop.run(); } }; }
 }

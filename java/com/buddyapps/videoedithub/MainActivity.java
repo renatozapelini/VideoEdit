@@ -33,52 +33,64 @@ public class MainActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackground(makeGradient());
+        root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{Color.parseColor("#060816"), Color.parseColor("#0B1220"), Color.parseColor("#0F172A")}));
 
         ScrollView scroll = new ScrollView(this);
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(18);
-        box.setPadding(pad, dp(24), pad, pad);
+        box.setPadding(pad, dp(28), pad, pad);
 
         TextView title = new TextView(this);
         title.setText("VideoEdit");
         title.setTextColor(Color.WHITE);
-        title.setTextSize(30);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextSize(32);
+        title.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
         title.setGravity(Gravity.CENTER);
         box.addView(title);
 
         TextView sub = new TextView(this);
-        sub.setText("Edição inteligente de vídeo: desenhe a tatuagem, rastreie, pré-visualize e borre o rosto preservando a boca.");
-        sub.setTextColor(Color.parseColor("#A7B4CC"));
+        sub.setText("Estúdio inteligente no seu celular");
+        sub.setTextColor(Color.parseColor("#A5B4FC"));
         sub.setTextSize(14);
         sub.setGravity(Gravity.CENTER);
-        sub.setPadding(0, dp(6), 0, dp(20));
+        sub.setPadding(0, dp(4), 0, dp(6));
         box.addView(sub);
 
-        box.addView(featureCard("✏️ Rastrear tatuagem", "Desenhe onde está a tatuagem, rastreie automaticamente no vídeo e confira na pré-visualização.",
-                "Abrir editor de tatuagem", () -> startActivity(new Intent(this, TattooTrackActivity.class)), true));
+        TextView desc = new TextView(this);
+        desc.setText("Desenhe a tatuagem, dê zoom, rastreie no vídeo e veja a pré-visualização. Borrão facial preservando a boca, tudo local no app.");
+        desc.setTextColor(Color.parseColor("#9DB0D0"));
+        desc.setTextSize(13);
+        desc.setGravity(Gravity.CENTER);
+        desc.setPadding(0, 0, 0, dp(22));
+        box.addView(desc);
 
-        box.addView(featureCard("🤖 IA local", "Processamento local no app com modelos incluídos para edição e borrão facial preservando a boca.",
-                "Abrir IA local", () -> startActivity(new Intent(this, AiActivity.class)), false));
+        box.addView(featureCard("✏️  Editor de tatuagem", "Marque a tatuagem com o dedo, use zoom para precisão, rastreie quadro a quadro e confira a pré-visualização.",
+                "Abrir editor", () -> startActivity(new Intent(this, TattooTrackActivity.class)),
+                new int[]{Color.parseColor("#1E1B4B"), Color.parseColor("#172554")}, Color.parseColor("#6366F1")));
 
-        box.addView(featureCard("🛠️ Ferramentas locais", "Edição manual/local no aparelho: seleção de vídeo, prévias e ajustes finos.",
-                "Abrir ferramentas locais", () -> startActivity(new Intent(this, LocalActivity.class)), false));
+        box.addView(featureCard("🤖  IA local", "Processamento no aparelho com modelos incluídos, sem abrir sites.",
+                "Abrir IA local", () -> startActivity(new Intent(this, AiActivity.class)),
+                new int[]{Color.parseColor("#111827"), Color.parseColor("#0F172A")}, Color.parseColor("#334155")));
+
+        box.addView(featureCard("🛠️  Ferramentas locais", "Seleção de vídeo, prévias e ajustes manuais direto no dispositivo.",
+                "Abrir ferramentas", () -> startActivity(new Intent(this, LocalActivity.class)),
+                new int[]{Color.parseColor("#111827"), Color.parseColor("#0F172A")}, Color.parseColor("#334155")));
 
         Button updateBtn = secondaryButton("Verificar atualização");
         LinearLayout.LayoutParams ulp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        ulp.topMargin = dp(12);
+        ulp.topMargin = dp(14);
         updateBtn.setLayoutParams(ulp);
         updateBtn.setOnClickListener(v -> checkForUpdates(true));
         box.addView(updateBtn);
 
         TextView ver = new TextView(this);
-        ver.setText("Versão instalada: " + getCurrentVersionName() + " (código " + getCurrentVersionCode() + ")\nAtualização automática via GitHub Releases");
+        ver.setText("Versão instalada: " + getCurrentVersionName() + "  •  Código " + getCurrentVersionCode() + "\nAtualizações automáticas via GitHub Releases");
         ver.setTextColor(Color.parseColor("#7C8CA8"));
         ver.setTextSize(12);
         ver.setGravity(Gravity.CENTER);
-        ver.setPadding(0, dp(12), 0, dp(20));
+        ver.setPadding(0, dp(14), 0, dp(24));
         box.addView(ver);
 
         scroll.addView(box);
@@ -88,46 +100,44 @@ public class MainActivity extends Activity {
         checkForUpdates(false);
     }
 
-    private LinearLayout featureCard(String title, String desc, String btnText, Runnable action, boolean accent) {
+    private LinearLayout featureCard(String title, String desc, String btnText, Runnable action, int[] colors, int stroke) {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.parseColor(accent ? "#172554" : "#111827"));
-        bg.setCornerRadius(dp(20));
-        bg.setStroke(dp(1), Color.parseColor(accent ? "#3B82F6" : "#243041"));
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, colors);
+        bg.setCornerRadius(dp(22));
+        bg.setStroke(dp(1), stroke);
         c.setBackground(bg);
-        int p = dp(16);
+        int p = dp(18);
         c.setPadding(p,p,p,p);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.bottomMargin = dp(12);
+        lp.bottomMargin = dp(14);
         c.setLayoutParams(lp);
 
         TextView t = new TextView(this);
-        t.setText(title); t.setTextColor(Color.WHITE); t.setTextSize(19); t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setText(title); t.setTextColor(Color.WHITE); t.setTextSize(19); t.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
         c.addView(t);
 
         TextView d = new TextView(this);
         d.setText(desc); d.setTextColor(Color.parseColor("#C6D3E6")); d.setTextSize(13);
-        d.setPadding(0, dp(6), 0, dp(12));
+        d.setPadding(0, dp(8), 0, dp(14));
         c.addView(d);
 
-        Button b = accent ? primaryButton(btnText) : secondaryButton(btnText);
+        Button b = stroke == Color.parseColor("#6366F1") ? primaryButton(btnText) : secondaryButton(btnText);
         b.setOnClickListener(v -> action.run());
         c.addView(b);
         return c;
     }
 
     private Button primaryButton(String t) {
-        Button b = new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.WHITE); b.setTypeface(Typeface.DEFAULT_BOLD);
-        GradientDrawable g = new GradientDrawable(); g.setColor(Color.parseColor("#2563EB")); g.setCornerRadius(dp(14));
+        Button b = new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.WHITE); b.setTypeface(Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD));
+        GradientDrawable g = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{Color.parseColor("#2563EB"), Color.parseColor("#7C3AED")}); g.setCornerRadius(dp(16));
         b.setBackground(g); b.setPadding(dp(14), dp(12), dp(14), dp(12)); return b;
     }
     private Button secondaryButton(String t) {
         Button b = new Button(this); b.setText(t); b.setAllCaps(false); b.setTextColor(Color.WHITE);
-        GradientDrawable g = new GradientDrawable(); g.setColor(Color.parseColor("#334155")); g.setCornerRadius(dp(14));
+        GradientDrawable g = new GradientDrawable(); g.setColor(Color.parseColor("#334155")); g.setCornerRadius(dp(16)); g.setStroke(dp(1), Color.parseColor("#475569"));
         b.setBackground(g); b.setPadding(dp(14), dp(12), dp(14), dp(12)); return b;
     }
-    private GradientDrawable makeGradient(){ GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.parseColor("#0B1220"), Color.parseColor("#101826"), Color.parseColor("#0F172A")}); g.setCornerRadius(0); return g; }
     private int dp(int v) { return Math.round(getResources().getDisplayMetrics().density * v); }
 
     private void checkForUpdates(boolean manual) {
@@ -154,7 +164,7 @@ public class MainActivity extends Activity {
                 String latest = normalize(tag);
                 String current = normalize(getCurrentVersionName());
                 boolean newer = isNewer(latest, current);
-                final String fTag = tag, fUrl = apkUrl, fHtml = html, fLatest = latest, fCurrent = current;
+                final String fTag = tag, fUrl = apkUrl, fHtml = html;
                 new Handler(Looper.getMainLooper()).post(() -> {
                     if (newer) {
                         if (!manual && updatePromptShown) return;
@@ -193,7 +203,6 @@ public class MainActivity extends Activity {
         if (v == null) return "";
         v = v.trim();
         if (v.startsWith("v") || v.startsWith("V")) v = v.substring(1);
-        // keep only digits and dots for comparison
         v = v.replaceAll("[^0-9.]", "");
         return v;
     }
