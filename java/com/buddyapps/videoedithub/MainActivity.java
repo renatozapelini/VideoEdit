@@ -161,22 +161,29 @@ public class MainActivity extends Activity {
                 String html = extract(json, "\"html_url\":\"", "\"");
                 String apkUrl = extractApkUrl(json);
                 if (apkUrl == null || apkUrl.isEmpty()) apkUrl = html;
-                String latest = normalize(tag);
-                String current = normalize(getCurrentVersionName());
-                boolean newer = isNewer(latest, current);
-                final String fTag = tag, fUrl = apkUrl, fHtml = html;
+
+                String currentRaw = getCurrentVersionName();
+                String latestNorm = normalize(tag);
+                String currentNorm = normalize(currentRaw);
+                // Consider up-to-date if same or if current is newer/equal by comparison
+                boolean hasUpdate = isNewer(latestNorm, currentNorm);
+
+                final String fTag = tag != null ? tag : latestNorm;
+                final String fUrl = apkUrl, fHtml = html;
                 new Handler(Looper.getMainLooper()).post(() -> {
-                    if (newer) {
+                    if (hasUpdate) {
                         if (!manual && updatePromptShown) return;
                         updatePromptShown = true;
                         new AlertDialog.Builder(MainActivity.this)
                                 .setTitle("Atualização disponível")
-                                .setMessage("Instalada: " + getCurrentVersionName() + " (código " + getCurrentVersionCode() + ")\nDisponível: " + fTag + "\n\nDeseja atualizar para a versão mais recente?")
+                                .setMessage("Instalada: " + currentRaw + " (código " + getCurrentVersionCode() + ")\nDisponível: " + fTag + "\n\nDeseja atualizar?")
                                 .setPositiveButton("Atualizar", (d, w) -> openUrl(fUrl != null ? fUrl : fHtml))
                                 .setNegativeButton("Depois", null)
                                 .show();
-                    } else if (manual) {
-                        Toast.makeText(MainActivity.this, "Você já está na última versão: " + getCurrentVersionName() + " (código " + getCurrentVersionCode() + ").", Toast.LENGTH_LONG).show();
+                    } else {
+                        if (manual) {
+                            Toast.makeText(MainActivity.this, "Você já está na última versão: " + currentRaw + " (código " + getCurrentVersionCode() + ").", Toast.LENGTH_LONG).show();
+                        }
                     }
                 });
             } catch (Exception e) {
@@ -203,7 +210,10 @@ public class MainActivity extends Activity {
         if (v == null) return "";
         v = v.trim();
         if (v.startsWith("v") || v.startsWith("V")) v = v.substring(1);
+        // keep digits and dots only
         v = v.replaceAll("[^0-9.]", "");
+        // trim trailing dots
+        while (v.endsWith(".")) v = v.substring(0, v.length()-1);
         return v;
     }
     private boolean isNewer(String latest, String current) {
@@ -223,7 +233,11 @@ public class MainActivity extends Activity {
     }
     private int parseIntSafe(String s) {
         if (s == null || s.isEmpty()) return 0;
-        try { return Integer.parseInt(s.replaceAll("[^0-9]", "")); } catch (Exception e) { return 0; }
+        try {
+            String d = s.replaceAll("[^0-9]", "");
+            if (d.isEmpty()) return 0;
+            return Integer.parseInt(d);
+        } catch (Exception e) { return 0; }
     }
     private String extract(String src, String start, String end) { int i = src.indexOf(start); if (i < 0) return null; i += start.length(); int j = src.indexOf(end, i); if (j < 0) return null; return src.substring(i, j); }
     private String extractApkUrl(String json) { String key = "\"browser_download_url\":\""; int idx = 0; while (true) { int i = json.indexOf(key, idx); if (i < 0) return null; i += key.length(); int j = json.indexOf("\"", i); if (j < 0) return null; String url = json.substring(i, j); if (url.endsWith(".apk")) return url; idx = j + 1; } }
