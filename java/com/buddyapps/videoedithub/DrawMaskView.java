@@ -66,7 +66,7 @@ public class DrawMaskView extends View {
             public boolean onScale(ScaleGestureDetector detector) {
                 float prev = scaleFactor;
                 scaleFactor *= detector.getScaleFactor();
-                scaleFactor = Math.max(1f, Math.min(6f, scaleFactor));
+                scaleFactor = Math.max(1f, Math.min(3f, scaleFactor));
                 float focusX = detector.getFocusX();
                 float focusY = detector.getFocusY();
                 float ratio = scaleFactor / prev;
